@@ -6,18 +6,24 @@ import "./App.css";
 
 const sleep = ms => new Promise(r => setTimeout(() => r(), ms));
 
-const readShows = createResource(async function fetchNews(props) {
+const readArticles = createResource(async function fetchNews(props) {
   await sleep(3000);
   const res = await fetch(
     `https://hn.algolia.com/api/v1/search_by_date?query=${props}`
   );
-  // console.log(res);
   return await res.json();
 });
 
-const Movies = withCache(props => {
-  // console.log(props);
-  const result = readShows(props.cache, props.query);
+const readArticleInfo = createResource(async function fetchNews(props) {
+  await sleep(3000);
+  const res = await fetch(
+    `https://hacker-news.firebaseio.com/v0/item/13629344.json`
+  );
+  return await res.json();
+});
+
+const Articles = withCache(props => {
+  const result = readArticles(props.cache, props.query, props.onClick);
 
   return (
     <div className="results">
@@ -27,12 +33,37 @@ const Movies = withCache(props => {
           <ul key={item.objectID}>
             <li>{item.created_at}</li>
             <li>
-              <a href={item.story_url} target="blank">
+              <button value={item.objectID} onClick={props.onClick}>
                 {item.story_title}
-              </a>
+              </button>
             </li>
           </ul>
         ))}
+    </div>
+  );
+});
+
+const ArticleInfo = withCache(props => {
+  // console.log(props);
+  const result = readArticleInfo(props.cache, props.query, props.onClick);
+  return (
+    <div className="article">
+      {result && (
+        <ul key={result.id}>
+          <li>
+            Story by
+            {result.by}
+          </li>
+          <li>
+            <a href={result.url} target="blank">
+              {result.title}
+            </a>
+          </li>
+          <li>
+            <button onClick={props.onClick}>Back</button>
+          </li>
+        </ul>
+      )}
     </div>
   );
 });
@@ -52,11 +83,10 @@ export default class App extends React.Component {
     super(props);
     this.state = {
       value: "",
-      submited: false
+      submited: false,
+      searchForStory: "",
+      storyTabOpen: false
     };
-
-    // this.handleSubmit = this.handleSubmit.bind(this);
-    // this.handleChange = this.handleChange.bind(this);
   }
   handleChange = event => {
     this.setState({ value: event.target.value, submited: false });
@@ -66,6 +96,20 @@ export default class App extends React.Component {
     event.preventDefault();
     this.setState({ submited: true });
   };
+
+  handleClick = event => {
+    this.setState({
+      searchForStory: event.target.value,
+      storyTabOpen: true
+    });
+  };
+
+  handleGoBack = () => {
+    this.setState({
+      storyTabOpen: false
+    });
+  };
+
   render() {
     return (
       <React.Fragment>
@@ -88,7 +132,8 @@ export default class App extends React.Component {
               <input type="submit" value="Submit" />
             </form>
             {this.state.submited &&
-              this.state.value && (
+              this.state.value &&
+              !this.state.storyTabOpen && (
                 <Placeholder
                   delayMs={1000}
                   fallback={
@@ -98,9 +143,28 @@ export default class App extends React.Component {
                     </div>
                   }
                 >
-                  <Movies query={this.state.value} />
+                  <Articles
+                    query={this.state.value}
+                    onClick={this.handleClick}
+                  />
                 </Placeholder>
               )}
+            {this.state.storyTabOpen && (
+              <Placeholder
+                delayMs={1000}
+                fallback={
+                  <div className="placeholder">
+                    <img className="App-logo" src={logo} alt="waiting logo" />
+                    Loading articles info ...
+                  </div>
+                }
+              >
+                <ArticleInfo
+                  query={this.state.searchForStory}
+                  onClick={this.handleGoBack}
+                />
+              </Placeholder>
+            )}
           </div>
         </div>
       </React.Fragment>
