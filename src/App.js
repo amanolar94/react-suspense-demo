@@ -9,7 +9,7 @@ const sleep = ms => new Promise(r => setTimeout(() => r(), ms));
 const readShows = createResource(async function fetchNews(props) {
   await sleep(3000);
   const res = await fetch(
-    `http://hn.algolia.com/api/v1/search_by_date?query=${props}`
+    `https://hn.algolia.com/api/v1/search_by_date?query=${props}`
   );
   // console.log(res);
   return await res.json();
