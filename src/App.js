@@ -9,7 +9,7 @@ const sleep = ms => new Promise(r => setTimeout(() => r(), ms));
 const readArticles = createResource(async function fetchNews(props) {
   await sleep(3000);
   const res = await fetch(
-    `https://hn.algolia.com/api/v1/search_by_date?query=${props}`
+    `https://hn.algolia.com/api/v1/search?query=${props}`
   );
   return await res.json();
 });
@@ -17,24 +17,29 @@ const readArticles = createResource(async function fetchNews(props) {
 const readArticleInfo = createResource(async function fetchNews(props) {
   await sleep(3000);
   const res = await fetch(
-    `https://hacker-news.firebaseio.com/v0/item/13629344.json`
+    `https://hacker-news.firebaseio.com/v0/item/${props}.json`
   );
   return await res.json();
 });
 
+const refactorReceivedDate = date => {
+  var day = new Date(date);
+  return `Date publised: ${day.getDate()}/${day.getMonth() +
+    1}/${day.getFullYear()}`;
+};
+
 const Articles = withCache(props => {
   const result = readArticles(props.cache, props.query, props.onClick);
-
   return (
     <div className="results">
       {result &&
         result.hits.length &&
         result.hits.map(item => (
           <ul key={item.objectID}>
-            <li>{item.created_at}</li>
+            <li>{refactorReceivedDate(item.created_at)}</li>
             <li>
               <button value={item.objectID} onClick={props.onClick}>
-                {item.story_title}
+                {item.title}
               </button>
             </li>
           </ul>
@@ -44,7 +49,6 @@ const Articles = withCache(props => {
 });
 
 const ArticleInfo = withCache(props => {
-  // console.log(props);
   const result = readArticleInfo(props.cache, props.query, props.onClick);
   return (
     <div className="article">
